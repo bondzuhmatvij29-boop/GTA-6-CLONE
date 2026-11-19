@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vice City v1.1</title>
+<title>Vice City v1.2</title>
 
 <style>
 *{box-sizing:border-box}
@@ -22,13 +22,13 @@ canvas{display:block}
  transform:translateX(-50%);
  background:#10152ddd;border:1px solid #ff35c5;
  padding:12px 20px;border-radius:10px;
- text-align:center;white-space:nowrap
+ text-align:center
 }
 #start{
  position:fixed;inset:0;z-index:10;
  background:#090b20;
  display:flex;align-items:center;justify-content:center;
- flex-direction:column;text-align:center;gap:18px;
+ flex-direction:column;text-align:center;gap:18px
 }
 #start h1{
  font-size:42px;color:#ff35c5;
@@ -37,11 +37,6 @@ canvas{display:block}
 button{
  padding:15px 35px;border:0;border-radius:8px;
  background:#00dfff;font-weight:bold;font-size:17px
-}
-#crosshair{
- position:fixed;top:50%;left:50%;
- transform:translate(-50%,-50%);
- pointer-events:none
 }
 </style>
 
@@ -59,14 +54,13 @@ button{
 
 <div id="start">
  <h1>VICE CITY</h1>
- <p>Відкритий 3D-світ — версія 1.1</p>
+ <p>Open World — Version 1.2</p>
  <button id="play">ПОЧАТИ ГРУ</button>
- <p>WASD — рух | Подвійне W — біг<br>
- F — автомобіль | Space — стрибок / дрифт</p>
+ <p>WASD — рух<br>Подвійне W — біг<br>F — автомобіль</p>
 </div>
 
 <div id="hud">
- <b style="color:#00eaff">VICE CITY v1.1</b><br>
+ <b style="color:#00eaff">VICE CITY v1.2</b><br>
  Режим: <span id="mode">Пішохід</span><br>
  Швидкість: <span id="speed">0</span> км/год<br>
  Біг: <span id="run">Вимкнено</span><br>
@@ -77,7 +71,6 @@ button{
  Мишка — камера
 </div>
 
-<div id="crosshair">+</div>
 <div id="message">Знайди автомобіль і натисни F</div>
 
 <script type="module">
@@ -85,13 +78,13 @@ button{
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
-// ==================================
+// =====================================
 // СЦЕНА
-// ==================================
+// =====================================
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x161b38);
-scene.fog=new THREE.Fog(0x161b38,100,260);
+scene.fog=new THREE.Fog(0x161b38,100,280);
 
 const camera=new THREE.PerspectiveCamera(
  70,innerWidth/innerHeight,0.1,500
@@ -106,25 +99,25 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.2;
 document.body.appendChild(renderer.domElement);
 
-// ==================================
-// СВІТЛО
-// ==================================
+// =====================================
+// ОСВІТЛЕННЯ
+// =====================================
 
 scene.add(new THREE.HemisphereLight(0x9bbaff,0x343047,2));
 
-const sunlight=new THREE.DirectionalLight(0xffc6a0,2.5);
-sunlight.position.set(-40,90,30);
-sunlight.castShadow=true;
-sunlight.shadow.mapSize.set(2048,2048);
-sunlight.shadow.camera.left=-100;
-sunlight.shadow.camera.right=100;
-sunlight.shadow.camera.top=100;
-sunlight.shadow.camera.bottom=-100;
-scene.add(sunlight);
+const sun=new THREE.DirectionalLight(0xffc6a0,2.5);
+sun.position.set(-40,90,30);
+sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-100;
+sun.shadow.camera.right=100;
+sun.shadow.camera.top=100;
+sun.shadow.camera.bottom=-100;
+scene.add(sun);
 
-// ==================================
+// =====================================
 // ФІЗИКА
-// ==================================
+// =====================================
 
 const world=new CANNON.World({
  gravity:new CANNON.Vec3(0,-20,0)
@@ -144,12 +137,11 @@ world.addContactMaterial(
  )
 );
 
-const staticObjects=[];
 const vehicles=[];
 
-// ==================================
+// =====================================
 // МАТЕРІАЛИ
-// ==================================
+// =====================================
 
 function material(color,roughness=0.7,metalness=0){
  return new THREE.MeshStandardMaterial({
@@ -157,13 +149,9 @@ function material(color,roughness=0.7,metalness=0){
  });
 }
 
-const roadMaterial=material(0x292c3b);
-const pavementMaterial=material(0x777b91);
-const neonMaterial=new THREE.MeshBasicMaterial({color:0xff25c9});
-
-// ==================================
+// =====================================
 // ЗЕМЛЯ
-// ==================================
+// =====================================
 
 const ground=new THREE.Mesh(
  new THREE.PlaneGeometry(300,300),
@@ -183,9 +171,11 @@ const groundBody=new CANNON.Body({
 groundBody.quaternion.setFromEuler(-Math.PI/2,0,0);
 world.addBody(groundBody);
 
-// ==================================
+// =====================================
 // ДОРОГИ
-// ==================================
+// =====================================
+
+const roadMaterial=material(0x292c3b);
 
 function road(x,z,w,d){
 
@@ -198,28 +188,29 @@ function road(x,z,w,d){
  mesh.position.set(x,0.025,z);
  scene.add(mesh);
 
- if(w>d){
-  for(let i=-Math.floor(w/10);i<=Math.floor(w/10);i++){
-   const line=new THREE.Mesh(
-    new THREE.PlaneGeometry(3,0.16),
-    new THREE.MeshBasicMaterial({color:0xffffff})
-   );
+ const count=Math.floor((w>d?w:d)/10);
 
-   line.rotation.x=-Math.PI/2;
-   line.position.set(x+i*10,0.04,z);
-   scene.add(line);
-  }
- }else{
-  for(let i=-Math.floor(d/10);i<=Math.floor(d/10);i++){
-   const line=new THREE.Mesh(
-    new THREE.PlaneGeometry(0.16,3),
-    new THREE.MeshBasicMaterial({color:0xffffff})
-   );
+ for(let i=-count/2;i<=count/2;i++){
 
-   line.rotation.x=-Math.PI/2;
-   line.position.set(x,0.04,z+i*10);
-   scene.add(line);
-  }
+  const horizontal=w>d;
+
+  const line=new THREE.Mesh(
+   new THREE.PlaneGeometry(
+    horizontal?3:0.16,
+    horizontal?0.16:3
+   ),
+   new THREE.MeshBasicMaterial({color:0xffffff})
+  );
+
+  line.rotation.x=-Math.PI/2;
+
+  line.position.set(
+   horizontal?x+i*10:x,
+   0.04,
+   horizontal?z:z+i*10
+  );
+
+  scene.add(line);
  }
 }
 
@@ -228,9 +219,9 @@ for(let i=-2;i<=2;i++){
  road(0,i*50,280,12);
 }
 
-// ==================================
-// СТАТИЧНІ БУДІВЛІ
-// ==================================
+// =====================================
+// БУДІВЛІ
+// =====================================
 
 function building(x,z,w,d,h,color){
 
@@ -255,8 +246,7 @@ function building(x,z,w,d,h,color){
  body.position.set(x,h/2,z);
  world.addBody(body);
 
- // Вікна
- const windowMaterial=new THREE.MeshStandardMaterial({
+ const windowMat=new THREE.MeshStandardMaterial({
   color:0x73dfff,
   emissive:0x1684bf,
   emissiveIntensity:1.5
@@ -267,22 +257,21 @@ function building(x,z,w,d,h,color){
 
    const win=new THREE.Mesh(
     new THREE.BoxGeometry(1.5,2,0.08),
-    windowMaterial
+    windowMat
    );
 
    win.position.set(x+xx,y,z+d/2+0.05);
    scene.add(win);
 
-   const win2=win.clone();
-   win2.position.z=z-d/2-0.05;
-   scene.add(win2);
+   const back=win.clone();
+   back.position.z=z-d/2-0.05;
+   scene.add(back);
   }
  }
 
- // Неонова вивіска
  const neon=new THREE.Mesh(
   new THREE.BoxGeometry(w*0.7,0.5,0.15),
-  neonMaterial
+  new THREE.MeshBasicMaterial({color:0xff25c9})
  );
 
  neon.position.set(x,h*0.45,z+d/2+0.1);
@@ -303,29 +292,26 @@ const colors=[
 
 for(let x=-2;x<=2;x++){
  for(let z=-2;z<=2;z++){
-
   for(const sx of [-1,1]){
    for(const sz of [-1,1]){
 
-    const bx=x*50+sx*(13+random()*7);
-    const bz=z*50+sz*(13+random()*7);
-
-    const w=8+random()*6;
-    const d=8+random()*6;
-    const h=15+random()*35;
-
     building(
-     bx,bz,w,d,h,
+     x*50+sx*(13+random()*7),
+     z*50+sz*(13+random()*7),
+     8+random()*6,
+     8+random()*6,
+     15+random()*35,
      colors[Math.floor(random()*colors.length)]
     );
+
    }
   }
  }
 }
 
-// ==================================
+// =====================================
 // ПАЛЬМИ
-// ==================================
+// =====================================
 
 function palm(x,z){
 
@@ -365,9 +351,9 @@ for(let x=-2;x<=2;x++){
  }
 }
 
-// ==================================
+// =====================================
 // ТРАМПЛІНИ
-// ==================================
+// =====================================
 
 function ramp(x,z){
 
@@ -385,26 +371,29 @@ function ramp(x,z){
 ramp(24,18);
 ramp(-24,-18);
 
-// ==================================
+// =====================================
 // ПЕРСОНАЖ
-// ==================================
+// =====================================
 
 const player=new THREE.Group();
 scene.add(player);
 
-const clothes=material(0x243c75);
-const skin=material(0xd69a75);
-const pants=material(0x222536);
-
 function characterPart(w,h,d,x,y,z,mat){
+
  const mesh=new THREE.Mesh(
   new THREE.BoxGeometry(w,h,d),mat
  );
+
  mesh.position.set(x,y,z);
  mesh.castShadow=true;
  player.add(mesh);
+
  return mesh;
 }
+
+const clothes=material(0x243c75);
+const skin=material(0xd69a75);
+const pants=material(0x222536);
 
 characterPart(0.9,1.2,0.45,0,1.45,0,clothes);
 
@@ -412,6 +401,7 @@ const head=new THREE.Mesh(
  new THREE.SphereGeometry(0.3,16,16),
  skin
 );
+
 head.position.y=2.25;
 player.add(head);
 
@@ -432,16 +422,15 @@ const playerBody=new CANNON.Body({
 playerBody.position.set(0,0.46,0);
 world.addBody(playerBody);
 
-// ==================================
+// =====================================
 // АВТОМОБІЛІ
-// ==================================
+// =====================================
 
 function createCar(x,z,color,name){
 
  const group=new THREE.Group();
  scene.add(group);
 
- // Кузов
  const bodyMesh=new THREE.Mesh(
   new THREE.BoxGeometry(2,0.65,4.1),
   material(color,0.28,0.65)
@@ -451,7 +440,6 @@ function createCar(x,z,color,name){
  bodyMesh.castShadow=true;
  group.add(bodyMesh);
 
- // Дах
  const cabin=new THREE.Mesh(
   new THREE.BoxGeometry(1.65,0.75,1.9),
   material(0x263c55,0.25,0.6)
@@ -460,7 +448,6 @@ function createCar(x,z,color,name){
  cabin.position.set(0,1.3,-0.2);
  group.add(cabin);
 
- // Скло
  const glass=new THREE.Mesh(
   new THREE.BoxGeometry(1.5,0.5,0.06),
   material(0x70caff,0.2,0.5)
@@ -469,7 +456,6 @@ function createCar(x,z,color,name){
  glass.position.set(0,1.35,0.78);
  group.add(glass);
 
- // Фари
  for(const side of [-1,1]){
 
   const light=new THREE.Mesh(
@@ -489,7 +475,6 @@ function createCar(x,z,color,name){
   group.add(tail);
  }
 
- // Колеса
  const wheels=[];
 
  for(const side of [-1,1]){
@@ -497,9 +482,7 @@ function createCar(x,z,color,name){
 
    const wheelGroup=new THREE.Group();
 
-   wheelGroup.position.set(
-    side*1.02,0.42,front*1.3
-   );
+   wheelGroup.position.set(side*1.02,0.42,front*1.3);
 
    const tire=new THREE.Mesh(
     new THREE.CylinderGeometry(0.4,0.4,0.25,20),
@@ -548,13 +531,12 @@ function createCar(x,z,color,name){
  return car;
 }
 
-// Автомобілі біля гравця
-const sport=createCar(4, -4,0xff168c,'SPORT');
-const sedan=createCar(-4,-5,0x008cff,'SEDAN');
+createCar(4,-4,0xff168c,'SPORT');
+createCar(-4,-5,0x008cff,'SEDAN');
 
-// ==================================
+// =====================================
 // КЕРУВАННЯ
-// ==================================
+// =====================================
 
 const keys={};
 
@@ -594,17 +576,18 @@ window.addEventListener('keyup',e=>{
  }
 });
 
-// ==================================
+// =====================================
 // КАМЕРА
-// ==================================
+// =====================================
 
 let yaw=0;
 let pitch=0.12;
-let locked=false;
 
 renderer.domElement.addEventListener('click',()=>{
  renderer.domElement.requestPointerLock();
 });
+
+let locked=false;
 
 document.addEventListener('pointerlockchange',()=>{
  locked=document.pointerLockElement===renderer.domElement;
@@ -620,9 +603,9 @@ document.addEventListener('mousemove',e=>{
  pitch=THREE.MathUtils.clamp(pitch,-0.45,0.8);
 });
 
-// ==================================
-// АВТОМОБІЛЬ: ПОСАДКА / ВИХІД
-// ==================================
+// =====================================
+// ПОСАДКА ТА ВИХІД
+// =====================================
 
 let currentCar=null;
 
@@ -632,14 +615,27 @@ function toggleCar(){
 
   const car=currentCar;
 
-  const exit=new CANNON.Vec3(
-   car.body.position.x+Math.cos(yaw)*3,
-   0.46,
-   car.body.position.z+Math.sin(yaw)*3
+  const right=new CANNON.Vec3();
+
+  car.body.quaternion.vmult(
+   new CANNON.Vec3(1,0,0),
+   right
   );
 
-  playerBody.position.copy(exit);
-  playerBody.velocity.copy(car.body.velocity);
+  playerBody.position.set(
+   car.body.position.x+right.x*2.2,
+   0.46,
+   car.body.position.z+right.z*2.2
+  );
+
+  playerBody.velocity.set(0,0,0);
+  playerBody.angularVelocity.set(0,0,0);
+
+  if(!world.bodies.includes(playerBody)){
+   world.addBody(playerBody);
+  }
+
+  playerBody.wakeUp();
 
   player.visible=true;
   currentCar=null;
@@ -658,10 +654,10 @@ function toggleCar(){
   const dx=car.body.position.x-playerBody.position.x;
   const dz=car.body.position.z-playerBody.position.z;
 
-  const dist=Math.hypot(dx,dz);
+  const distance=Math.hypot(dx,dz);
 
-  if(dist<best){
-   best=dist;
+  if(distance<best){
+   best=distance;
    nearest=car;
   }
  }
@@ -669,16 +665,21 @@ function toggleCar(){
  if(nearest){
 
   currentCar=nearest;
+
+  world.removeBody(playerBody);
+
   player.visible=false;
-  playerBody.velocity.setZero();
+  running=false;
+
+  nearest.body.wakeUp();
 
   document.getElementById('mode').textContent='Водій';
  }
 }
 
-// ==================================
-// РУХ ГРАВЦЯ
-// ==================================
+// =====================================
+// РУХ ПЕРСОНАЖА
+// =====================================
 
 let grounded=false;
 let animationTime=0;
@@ -736,54 +737,48 @@ function updatePlayer(dt){
   playerBody.velocity.y=8;
   grounded=false;
  }
-
- if(playerBody.position.y<=0.46){
-  playerBody.position.y=0.46;
-  playerBody.velocity.y=Math.max(0,playerBody.velocity.y);
-  grounded=true;
- }
-
- player.position.set(
-  playerBody.position.x,
-  playerBody.position.y-0.46,
-  playerBody.position.z
- );
 }
 
-// ==================================
-// ФІЗИКА АВТОМОБІЛЯ
-// ==================================
+// =====================================
+// ФІЗИКА АВТОМОБІЛІВ
+// =====================================
 
 function updateCar(car,dt){
 
  const body=car.body;
 
  const forward=new CANNON.Vec3();
+ const right=new CANNON.Vec3();
 
  body.quaternion.vmult(
   new CANNON.Vec3(0,0,-1),
   forward
  );
 
- const right=new CANNON.Vec3();
-
  body.quaternion.vmult(
   new CANNON.Vec3(1,0,0),
   right
  );
 
- const velocity=body.velocity;
- const speed=velocity.dot(forward);
+ let longitudinal=body.velocity.dot(forward);
+ let lateral=body.velocity.dot(right);
 
  if(currentCar===car){
 
-  let acceleration=0;
+  if(keys.KeyW)longitudinal+=18*dt;
 
-  if(keys.KeyW)acceleration=25;
-  if(keys.KeyS)acceleration=-20;
+  if(keys.KeyS){
 
-  const force=forward.scale(acceleration*body.mass);
-  body.applyForce(force,body.position);
+   if(longitudinal>0){
+    longitudinal-=28*dt;
+   }else{
+    longitudinal-=12*dt;
+   }
+  }
+
+  longitudinal=THREE.MathUtils.clamp(
+   longitudinal,-12,32
+  );
 
   let steer=0;
 
@@ -791,70 +786,56 @@ function updateCar(car,dt){
   if(keys.KeyD)steer=-1;
 
   car.steering=THREE.MathUtils.lerp(
-   car.steering,
-   steer*0.55,
-   Math.min(1,dt*5)
+   car.steering,steer,Math.min(1,dt*6)
   );
 
-  const steeringPower=THREE.MathUtils.clamp(
-   1-Math.abs(speed)/55,0.2,1
+  const turnPower=Math.min(Math.abs(longitudinal)/5,1.5);
+
+  body.angularVelocity.set(
+   0,
+   car.steering*turnPower*Math.sign(longitudinal||1),
+   0
   );
 
-  body.angularVelocity.y=
-   car.steering*speed*0.055*steeringPower;
-
-  // Бічне зчеплення
-  const sideSpeed=velocity.dot(right);
-
-  const drift=keys.Space?0.15:0.8;
-
-  body.applyForce(
-   right.scale(-sideSpeed*body.mass*drift),
-   body.position
-  );
-
-  if(keys.Space){
-   body.angularDamping=0.18;
-  }else{
-   body.angularDamping=0.65;
-  }
+  lateral*=Math.pow(keys.Space?0.985:0.78,dt*60);
 
   if(!keys.KeyW&&!keys.KeyS){
-   body.velocity.x*=0.995;
-   body.velocity.z*=0.995;
+   longitudinal*=Math.pow(0.992,dt*60);
   }
 
  }else{
 
-  car.steering=THREE.MathUtils.lerp(
-   car.steering,0,dt*3
-  );
+  car.steering=THREE.MathUtils.lerp(car.steering,0,dt*3);
 
-  const sideSpeed=velocity.dot(right);
-
-  body.applyForce(
-   right.scale(-sideSpeed*body.mass*0.8),
-   body.position
-  );
+  body.angularVelocity.y*=0.9;
+  lateral*=Math.pow(0.78,dt*60);
+  longitudinal*=Math.pow(0.998,dt*60);
  }
 
- // Обертання коліс
+ body.velocity.set(
+  forward.x*longitudinal+right.x*lateral,
+  body.velocity.y,
+  forward.z*longitudinal+right.z*lateral
+ );
+
+ car.speed=longitudinal;
+
  for(const wheel of car.wheels){
 
-  wheel.mesh.children[0].rotation.x+=speed*dt*0.7;
-  wheel.mesh.children[1].rotation.x+=speed*dt*0.7;
+  wheel.mesh.children[0].rotation.x+=longitudinal*dt;
+  wheel.mesh.children[1].rotation.x+=longitudinal*dt;
 
   if(wheel.front){
-   wheel.mesh.rotation.y=car.steering*0.7;
+   wheel.mesh.rotation.y=car.steering*0.45;
   }
  }
 
- car.speed=speed;
+ body.wakeUp();
 }
 
-// ==================================
-// ОНОВЛЕННЯ МОДЕЛЕЙ
-// ==================================
+// =====================================
+// СИНХРОНІЗАЦІЯ
+// =====================================
 
 function syncModels(){
 
@@ -871,9 +852,9 @@ function syncModels(){
  }
 }
 
-// ==================================
+// =====================================
 // КАМЕРА
-// ==================================
+// =====================================
 
 const cameraTarget=new THREE.Vector3();
 
@@ -887,7 +868,6 @@ function updateCamera(dt){
 
   target=currentCar.group.position.clone();
   target.y+=1;
-
   distance=9;
   height=3;
 
@@ -895,7 +875,6 @@ function updateCamera(dt){
 
   target=player.position.clone();
   target.y+=1.4;
-
   distance=6;
   height=2.3;
  }
@@ -923,9 +902,11 @@ function updateCamera(dt){
  camera.lookAt(cameraTarget);
 }
 
-// ==================================
-// HUD
-// ==================================
+// =====================================
+// ІНТЕРФЕЙС
+// =====================================
+
+const message=document.getElementById('message');
 
 function updateHUD(){
 
@@ -950,9 +931,7 @@ function updateHUD(){
    const dx=car.body.position.x-playerBody.position.x;
    const dz=car.body.position.z-playerBody.position.z;
 
-   if(Math.hypot(dx,dz)<5){
-    nearby=true;
-   }
+   if(Math.hypot(dx,dz)<5)nearby=true;
   }
 
   message.textContent=nearby?
@@ -961,11 +940,9 @@ function updateHUD(){
  }
 }
 
-const message=document.getElementById('message');
-
-// ==================================
+// =====================================
 // ГОЛОВНИЙ ЦИКЛ
-// ==================================
+// =====================================
 
 const clock=new THREE.Clock();
 
@@ -983,7 +960,16 @@ function animate(){
 
  world.step(1/60,dt,5);
 
- grounded=playerBody.position.y<=0.47;
+ if(!currentCar){
+
+  grounded=playerBody.position.y<=0.47;
+
+  if(playerBody.position.y<0.46){
+   playerBody.position.y=0.46;
+   playerBody.velocity.y=0;
+   grounded=true;
+  }
+ }
 
  syncModels();
  updateCamera(dt);
@@ -992,15 +978,15 @@ function animate(){
  renderer.render(scene,camera);
 }
 
-// ==================================
-// ЗАПУСК
-// ==================================
+// =====================================
+// СТАРТ
+// =====================================
 
 document.getElementById('play').addEventListener('click',()=>{
 
  document.getElementById('start').style.display='none';
-
  renderer.domElement.requestPointerLock();
+
 });
 
 camera.position.set(0,5,10);
